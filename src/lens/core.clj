@@ -39,6 +39,29 @@
       (apply q/line (first lines))
       (recur (rest lines)))))
 
+(defn refract-ray [ray point normal])
+
+(defn cast-ray [source ray boundary]
+  "Finds the intersection that a ray has with a boundary."
+  ; ray is assumed to be a unit vector
+  ;; [[a b]  [[t]    [[e]
+  ;;  [c d]]  [s]] =  [f]]
+  (let [boundary-ray (map - (last boundary) (first boundary))
+        a (first ray)
+        b (first boundary-ray)
+        c (last ray)
+        d (last boundary-ray)
+        bound-source (map - (last boundary) source)
+        e (first bound-source)
+        f (last bound-source)
+        top (- (* a f) (* c e))
+        bottom (- (* a d) (* b c))]
+    (if (not= 0 bottom)
+      (let [s (/ top bottom)]
+        (if (and (> s 0) (< s 1))
+          (map + (map #(* -1 s %) boundary-ray) (last boundary)))))))
+
+
 (defn refract-line [line state]
   "refract a line where the second coordinate pair is at the surface of the lens."
   (let [vl (map - (last line) (first line))
