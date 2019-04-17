@@ -39,7 +39,23 @@
       (apply q/line (first lines))
       (recur (rest lines)))))
 
-(defn refract-ray [ray point normal])
+(defn refract-ray [ray normal refraction]
+  "Refracts a ray with a given normal vector and ratio of indices of refraction."
+  (let [magnitude (fn [v] (Math/sqrt (apply + (map * v v))))
+        antinormal (map #(* -1.0 %) normal)
+        cross-prod (/ (- (* (first ray) (last antinormal)) (* (first antinormal) (last ray)))
+                      (magnitude ray)
+                      (magnitude normal))
+        angle-in (Math/asin cross-prod)
+        angle-out (if (> 0 (apply + (map * ray normal)))
+                    (/ angle-in refraction)
+                    (* angle-in refraction))
+        dangle (- angle-in angle-out)
+        s (Math/sin dangle)
+        c (Math/cos dangle)
+        rotated [(- (* c (first ray)) (* s (last ray)))
+                 (+ (* s (first ray)) (* c (last ray)))]]
+    rotated))
 
 (defn cast-ray [source ray boundary]
   "Finds the intersection that a ray has with a boundary."
@@ -56,7 +72,7 @@
         f (last bound-source)
         top (- (* a f) (* c e))
         bottom (- (* a d) (* b c))]
-    (if (not= 0 bottom)
+    (if (not= 0.0 bottom)
       (let [s (/ top bottom)]
         (if (and (> s 0) (< s 1))
           (map + (map #(* -1 s %) boundary-ray) (last boundary)))))))
@@ -67,7 +83,6 @@
   (let [vl (map - (last line) (first line))
         vr (map - [(:lens-x state) (:lens-y state)] (last line))
         magnitude (fn [v] (Math/sqrt (apply + (map * v v))))
-        d-prod (apply + (map * vl vr))
         cross-prod (- (* (first vl) (last vr)) (* (first vr) (last vl)))
         angle-in (Math/asin (/ cross-prod (magnitude vl) (magnitude vr)))
         angle-out (Math/asin (/ (Math/sin angle-in) (:refraction-index state)))
